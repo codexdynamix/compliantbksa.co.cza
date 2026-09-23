@@ -1,0 +1,38 @@
+{
+  "url": "http://127.0.0.1:8081/",
+  "viewports": {
+    "desktop": {
+      "width": 1280,
+      "height": 800,
+      "status": 200,
+      "title": "Compliant Bookkeeping SA",
+      "hasCanvas": false,
+      "bodyTextLen": 6723,
+      "bodyTextHash": "a07dff1cad55b0a22d553a238cc35e03d6b1c6b6264ad4dadd1940c25e8e71be",
+      "bodyTextPrefix": "COMPLIANT BOOKKEEPING SA Home Services Agriculture Outsource Pri",
+      "horizontalOverflow": false,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "screenshot": "/workspace/screenshots/app-builder-built.png"
+    },
+    "mobile": {
+      "width": 390,
+      "height": 844,
+      "status": 200,
+      "title": "Compliant Bookkeeping SA",
+      "hasCanvas": false,
+      "bodyTextLen": 6492,
+      "bodyTextHash": "8548c7cc13575726bc0a9b30cae5a8b6a5dda3fda1f05b17579bae0968179cad",
+      "bodyTextPrefix": "COMPLIANT BOOKKEEPING SA PROFESSIONAL ACCOUNTING Keeping your bo",
+      "horizontalOverflow": false,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "screenshot": "/workspace/screenshots/app-builder-built-mobile.png"
+    }
+  },
+  "brandWarnings": [],
+  "authWarnings": [],
+  "verdictFile": "/workspace/screenshots/app-builder-built.json",
+  "divergesFromBaseline": false,
+  "baselineReasons": []
+}
