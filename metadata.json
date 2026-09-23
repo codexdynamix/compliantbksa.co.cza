@@ -1,0 +1,8 @@
+{
+  "name": "Compliant Bookkeeping SA",
+  "description": "Compliant Bookkeeping SA — professional accounting, payroll, tax and compliance services for South African businesses and agricultural enterprises.",
+  "permissions": [],
+  "capabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

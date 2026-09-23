@@ -112,13 +112,20 @@ em {
   background: var(--color-bg);
   color: var(--color-fg);
 }
-.page-transition { animation: rise 0.55s var(--ease-out) both; }
+.page-transition { animation: rise 0.4s var(--ease-out) both; }
 [data-reveal] {
-  opacity: 0;
-  transform: translateY(16px);
-  transition: opacity 0.7s var(--ease-out), transform 0.7s var(--ease-out);
+  opacity: 1;
+  transform: none;
+  transition: opacity 0.5s var(--ease-out), transform 0.5s var(--ease-out);
 }
-[data-reveal].is-visible { opacity: 1; transform: none; }
+.js-reveals [data-reveal]:not(.is-visible) {
+  opacity: 0;
+  transform: translateY(14px);
+}
+.js-reveals [data-reveal].is-visible {
+  opacity: 1;
+  transform: none;
+}
 
 /* Header — Apple-like frosted bar */
 .site-header {
@@ -912,6 +919,7 @@ em {
   padding: 120px 0;
   background: var(--color-forest);
   color: var(--color-cream);
+  scroll-margin-top: 80px;
 }
 .contact-inner {
   display: grid;
@@ -999,6 +1007,41 @@ em {
   box-shadow: inset 0 0 0 1.5px var(--color-leaf);
 }
 .form-submit { width: 100%; margin-top: 4px; }
+.form-submit:disabled { opacity: 0.7; cursor: not-allowed; }
+.form-dispatch-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.75rem;
+  color: var(--color-muted);
+  background: color-mix(in oklab, var(--color-bg) 80%, white);
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid color-mix(in oklab, var(--color-fg) 8%, transparent);
+}
+.form-dispatch-badge svg { width: 14px; height: 14px; color: var(--color-leaf); flex-shrink: 0; }
+.form-recipients-note {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 0.75rem;
+  line-height: 1.5;
+}
+.form-recipients-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 4px;
+}
+.form-recipient-tag {
+  display: inline-block;
+  font-size: 0.6875rem;
+  font-family: monospace;
+  padding: 2px 7px;
+  border-radius: 6px;
+  background: var(--color-bg);
+  border: 1px solid color-mix(in oklab, var(--color-fg) 8%, transparent);
+  color: var(--color-fg);
+}
 .privacy-note { margin: 0; color: var(--color-muted); font-size: 0.75rem; }
 .privacy-note a { color: var(--color-leaf); }
 .form-success {
@@ -1262,6 +1305,12 @@ em {
   display: flex;
   align-items: center;
   gap: 10px;
+}
+.wa-preview-wa {
+  width: 36px;
+  height: 36px;
+  color: #25d366;
+  flex: none;
 }
 .wa-preview-head strong { display: block; font-size: 0.875rem; letter-spacing: -0.02em; }
 .wa-preview-head span { display: block; color: var(--color-muted); font-size: 0.75rem; }

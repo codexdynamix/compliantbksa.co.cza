@@ -1,11 +1,11 @@
 import { type ReactNode } from "react";
 import { Link } from "@tanstack/react-router";
+import { scrollToContactForm } from "@/lib/scroll";
 import {
   ArrowRight,
   ArrowUpRight,
   BarChart3,
   Calculator,
-  Check,
   ChevronDown,
   Clock3,
   FileSpreadsheet,
@@ -42,9 +42,19 @@ export function Hero() {
             <span>Supporting your growth.</span>
           </div>
           <div className="hero-actions animate-rise delay-3">
-            <Link to="/contact" className="button button-dark">
+            <a
+              href="#contact"
+              onClick={(e) => {
+                e.preventDefault();
+                const scrolled = scrollToContactForm();
+                if (!scrolled) {
+                  window.location.href = "/contact#contact";
+                }
+              }}
+              className="button button-dark"
+            >
               Request a conversation <ArrowRight aria-hidden="true" />
-            </Link>
+            </a>
           </div>
           <div className="animate-rise delay-4">
             <HeroDock />

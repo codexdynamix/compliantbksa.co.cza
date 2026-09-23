@@ -1,8 +1,9 @@
 import { useEffect, useState, type ReactNode } from "react";
-import { Link, useRouterState } from "@tanstack/react-router";
+import { Link, useRouter, useRouterState } from "@tanstack/react-router";
 import { ArrowUpRight, Menu, X } from "lucide-react";
-import { GmailAppIcon, MapsAppIcon, WhatsAppAppIcon, WhatsAppGlyph } from "@/components/brand-icons";
+import { GmailAppIcon, MapsAppIcon, WhatsAppGlyph } from "@/components/brand-icons";
 import { SITE, navigation } from "@/lib/site";
+import { scrollToContactForm } from "@/lib/scroll";
 
 function Wordmark({ footer = false }: { footer?: boolean }) {
   return (
@@ -18,15 +19,20 @@ function Wordmark({ footer = false }: { footer?: boolean }) {
 
 function useReveals(pathname: string) {
   useEffect(() => {
+    document.documentElement.classList.add("js-reveals");
     const items = Array.from(document.querySelectorAll<HTMLElement>("[data-reveal]"));
     if (!items.length) return;
     const show = (item: HTMLElement) => item.classList.add("is-visible");
     const revealInView = () => {
-      const threshold = window.innerHeight * 1.12;
+      const threshold = window.innerHeight * 1.25;
       items.forEach((item) => {
         if (item.getBoundingClientRect().top <= threshold) show(item);
       });
     };
+
+    // Show initial elements immediately
+    revealInView();
+
     if (!("IntersectionObserver" in window)) {
       items.forEach(show);
       return;
@@ -39,14 +45,21 @@ function useReveals(pathname: string) {
             observer.unobserve(entry.target);
           }
         }),
-      { rootMargin: "0px 0px -8% 0px", threshold: 0.12 },
+      { rootMargin: "150px 0px 50px 0px", threshold: 0.01 },
     );
     items.forEach((item) => observer.observe(item));
     const frame = window.requestAnimationFrame(revealInView);
     window.addEventListener("scroll", revealInView, { passive: true });
     window.addEventListener("resize", revealInView);
+
+    // Safety fallback: reveal all elements after a short delay so no element stays hidden
+    const safetyTimer = setTimeout(() => {
+      items.forEach(show);
+    }, 600);
+
     return () => {
       window.cancelAnimationFrame(frame);
+      clearTimeout(safetyTimer);
       window.removeEventListener("scroll", revealInView);
       window.removeEventListener("resize", revealInView);
       observer.disconnect();
@@ -57,6 +70,7 @@ function useReveals(pathname: string) {
 function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const router = useRouter();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const darkHeader = pathname !== "/";
 
@@ -67,6 +81,15 @@ function Header() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
   useEffect(() => setMenuOpen(false), [pathname]);
+
+  const handleBookClick = (e: React.MouseEvent<HTMLAnchorElement>) => {
+    e.preventDefault();
+    setMenuOpen(false);
+    const scrolledNow = scrollToContactForm();
+    if (!scrolledNow) {
+      router.navigate({ to: "/contact", hash: "contact" });
+    }
+  };
 
   return (
     <header className={`site-header ${darkHeader ? "site-header-dark" : ""} ${scrolled ? "site-header-scrolled" : ""}`}>
@@ -84,9 +107,9 @@ function Header() {
               {item.label}
             </Link>
           ))}
-          <Link to="/contact" className="nav-cta">
+          <a href="#contact" onClick={handleBookClick} className="nav-cta">
             Book a consultation <ArrowUpRight aria-hidden="true" />
-          </Link>
+          </a>
         </div>
         <button
           type="button"
@@ -106,10 +129,10 @@ function Header() {
               <ArrowUpRight aria-hidden="true" />
             </Link>
           ))}
-          <Link to="/contact" onClick={() => setMenuOpen(false)} className="mobile-nav-link">
+          <a href="#contact" onClick={handleBookClick} className="mobile-nav-link">
             <span>Book a consultation</span>
             <ArrowUpRight aria-hidden="true" />
-          </Link>
+          </a>
         </div>
       ) : null}
     </header>
@@ -166,13 +189,13 @@ function WhatsAppDock() {
       {preview ? (
         <div className="wa-preview" role="dialog" aria-label="WhatsApp message">
           <div className="wa-preview-head">
-            <WhatsAppAppIcon size={36} />
+            <WhatsAppGlyph className="wa-preview-wa" />
             <span>
               <strong>Compliant Bookkeeping SA</strong>
               <span>Usually replies in a few minutes</span>
             </span>
           </div>
-          <p>Need the books in order? Message us on WhatsApp — no hard sell, just a practical next step.</p>
+          <p>Need the books in order? Message us on WhatsApp.</p>
           <div className="wa-preview-actions">
             <a className="wa-preview-open" href={SITE.whatsappHref} target="_blank" rel="noreferrer">
               <WhatsAppGlyph /> Open WhatsApp
@@ -235,11 +258,21 @@ export function HeroDock() {
 }
 
 export function SiteShell({ children }: { children: ReactNode }) {
-  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  const location = useRouterState({ select: (s) => s.location });
+  const pathname = location.pathname;
+  const hash = location.hash;
   useReveals(pathname);
+
   useEffect(() => {
-    window.scrollTo({ top: 0, behavior: "auto" });
-  }, [pathname]);
+    if (hash === "contact") {
+      const timer = setTimeout(() => {
+        scrollToContactForm();
+      }, 100);
+      return () => clearTimeout(timer);
+    } else {
+      window.scrollTo({ top: 0, behavior: "auto" });
+    }
+  }, [pathname, hash]);
 
   return (
     <div className="site-shell">

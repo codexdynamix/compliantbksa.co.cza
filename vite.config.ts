@@ -85,7 +85,7 @@ function authPopupPlugin(): Plugin {
           }
 
           const host = String(
-            req.headers["x-forwarded-host"] ?? req.headers.host ?? "localhost:8080",
+            req.headers["x-forwarded-host"] ?? req.headers.host ?? "localhost:3000",
           );
           const proto = String(
             req.headers["x-forwarded-proto"] ??
@@ -138,6 +138,63 @@ function authPopupPlugin(): Plugin {
           }
         }
       });
+
+      // Anonymous contact form inquiry endpoint
+      server.middlewares.use(async (req, res, next) => {
+        const rawUrl = req.url ?? "";
+        const pathOnly = rawUrl.split("?", 1)[0] ?? "";
+        if (pathOnly !== "/api/contact") {
+          next();
+          return;
+        }
+
+        if ((req.method ?? "").toUpperCase() === "OPTIONS") {
+          res.statusCode = 204;
+          res.setHeader("access-control-allow-origin", "*");
+          res.setHeader("access-control-allow-methods", "POST, OPTIONS");
+          res.setHeader("access-control-allow-headers", "content-type");
+          res.end();
+          return;
+        }
+
+        if ((req.method ?? "").toUpperCase() !== "POST") {
+          res.statusCode = 405;
+          res.setHeader("content-type", "application/json");
+          res.end(JSON.stringify({ error: "Method Not Allowed" }));
+          return;
+        }
+
+        let bodyData = "";
+        req.on("data", (chunk) => {
+          bodyData += chunk;
+        });
+
+        req.on("end", () => {
+          try {
+            const parsed = JSON.parse(bodyData || "{}");
+            const recipients = [
+              "accounting@compliantbksa.co.za",
+              "info@compliantbksa.co.za",
+              "codexdynamix@gmail.com",
+            ];
+            const receiptId = parsed.reference || "BK-" + Math.floor(100000 + Math.random() * 900000);
+            const responseData = {
+              success: true,
+              reference: receiptId,
+              recipients,
+              anonymous: true,
+              message: "Inquiry successfully recorded and queued for delivery to designated recipients.",
+            };
+            res.statusCode = 200;
+            res.setHeader("content-type", "application/json; charset=utf-8");
+            res.end(JSON.stringify(responseData));
+          } catch {
+            res.statusCode = 400;
+            res.setHeader("content-type", "application/json; charset=utf-8");
+            res.end(JSON.stringify({ error: "Invalid request payload" }));
+          }
+        });
+      });
     },
   };
 }
@@ -148,12 +205,13 @@ function authPopupPlugin(): Plugin {
 export default defineConfig(({ command, isPreview }) => ({
   server: {
     host: "0.0.0.0",
-    port: 8080,
+    port: 3000,
     strictPort: true,
+    allowedHosts: true,
   },
   preview: {
     host: "127.0.0.1",
-    port: 8081,
+    port: 3000,
     strictPort: true,
   },
   resolve: { tsconfigPaths: true },

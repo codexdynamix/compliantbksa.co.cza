@@ -8,6 +8,11 @@ export const SITE = {
   phoneAltHref: "tel:+27742063255",
   email: "info@compliantbksa.co.za",
   accountsEmail: "accounting@compliantbksa.co.za",
+  submissionEmails: [
+    "accounting@compliantbksa.co.za",
+    "info@compliantbksa.co.za",
+    "codexdynamix@gmail.com",
+  ],
   whatsappHref:
     "https://wa.me/27834119467?text=Hello%20Compliant%20Bookkeeping%20SA%2C%20I%20would%20like%20to%20talk%20about%20bookkeeping%20support.",
   mapsCapeTown:
