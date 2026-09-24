@@ -34,4 +34,7 @@ jobs:
           username: ${{ secrets.HOSTINGER_USERNAME }}
           password: ${{ secrets.HOSTINGER_PASSWORD }}
           local-dir: ./dist-hostinger/
-          server-dir: ${{ secrets.HOSTINGER_SERVER_DIR || './public_html/' }}
+          # Hostinger FTP user accounts created for a domain are rooted directly inside public_html.
+          # Uploading to './' places all files directly into the website root and prevents creating a duplicate 'public_html/public_html' folder.
+          server-dir: ${{ secrets.HOSTINGER_SERVER_DIR || './' }}
+

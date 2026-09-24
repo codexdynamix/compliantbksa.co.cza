@@ -71,20 +71,21 @@ function Header() {
           {menuOpen ? <X aria-hidden="true" /> : <Menu aria-hidden="true" />}
         </button>
       </nav>
-      {menuOpen ? (
-        <div className="mobile-nav">
-          {navigation.map((item) => (
-            <Link key={item.to} to={item.to} onClick={() => setMenuOpen(false)} className="mobile-nav-link">
-              <span>{item.label}</span>
-              <ArrowUpRight aria-hidden="true" />
-            </Link>
-          ))}
-          <a href="#contact" onClick={handleBookClick} className="mobile-nav-link">
-            <span>Book a consultation</span>
+      <div
+        className={`mobile-nav ${menuOpen ? "is-open" : ""}`}
+        style={{ display: menuOpen ? "grid" : "none" }}
+      >
+        {navigation.map((item) => (
+          <Link key={item.to} to={item.to} onClick={() => setMenuOpen(false)} className="mobile-nav-link">
+            <span>{item.label}</span>
             <ArrowUpRight aria-hidden="true" />
-          </a>
-        </div>
-      ) : null}
+          </Link>
+        ))}
+        <a href="#contact" onClick={handleBookClick} className="mobile-nav-link">
+          <span>Book a consultation</span>
+          <ArrowUpRight aria-hidden="true" />
+        </a>
+      </div>
     </header>
   );
 }

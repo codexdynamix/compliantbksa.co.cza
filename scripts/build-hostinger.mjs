@@ -98,14 +98,14 @@ async function fetchRouteHtml(routePath) {
   }
 }
 
-function transformToProductionHtml(rawHtml, cssName, jsName) {
+function transformToProductionHtml(rawHtml, cssName) {
   let html = rawHtml;
 
   // 1. Remove Vite dev styles
   html = html.replace(/<link[^>]*href="\/src\/styles\.css"[^>]*>/g, "");
   html = html.replace(/<link[^>]*href="\/@tanstack-start\/styles\.css[^"]*"[^>]*>/g, "");
 
-  // 2. Remove dev virtual entry script and preloads
+  // 2. Remove dev virtual entry script, streaming boundaries and preloads
   html = html.replace(/<link[^>]*href="\/@id\/virtual:tanstack-start-dev-client-entry"[^>]*\/>/g, "");
   html = html.replace(/<script[^>]*src="\/@id\/virtual:tanstack-start-dev-client-entry"[^>]*><\/script>/g, "");
   html = html.replace(/<script[^>]*data-tsr-stream-part=""[^>]*>[\s\S]*?<\/script>/g, "");
@@ -116,17 +116,18 @@ function transformToProductionHtml(rawHtml, cssName, jsName) {
     html = html.replace("</head>", `  <link rel="stylesheet" href="/assets/${cssName}" />\n</head>`);
   }
 
-  // 4. Inject production JS bundle before </body> if not already present
-  if (jsName && !html.includes(`/assets/${jsName}`)) {
-    html = html.replace("</body>", `  <script type="module" src="/assets/${jsName}"></script>\n</body>`);
+  // 4. Inject production Hostinger client script before </body>
+  // This provides zero-dependency interactivity (mobile menu, FAQ accordion, contact form PHP delivery, smooth scroll)
+  // and eliminates hydration mismatch blank screens.
+  if (!html.includes("/assets/site-client.js")) {
+    html = html.replace("</body>", `  <script src="/assets/site-client.js" defer></script>\n</body>`);
   }
 
   return html;
 }
 
-function createFallbackHtml(title, cssName, jsName) {
+function createFallbackHtml(title, cssName) {
   const cssTag = cssName ? `<link rel="stylesheet" href="/assets/${cssName}">` : "";
-  const jsTag = jsName ? `<script type="module" src="/assets/${jsName}"></script>` : "";
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -143,14 +144,27 @@ function createFallbackHtml(title, cssName, jsName) {
   ${cssTag}
 </head>
 <body>
-  <div id="root">
-    <div class="site-shell">
-      <div style="min-height: 100vh; display: flex; align-items: center; justify-content: center; background: #1E2528; color: #FAF7F2; font-family: system-ui, -apple-system, sans-serif;">
-        <p>Loading Compliant Bookkeeping SA...</p>
-      </div>
-    </div>
+  <div class="site-shell">
+    <header class="site-header">
+      <nav class="header-inner" aria-label="Main navigation">
+        <a href="/" class="logo-link"><span class="wordmark"><span class="wordmark-type"><span>COMPLIANT</span><small>BOOKKEEPING SA</small></span></span></a>
+        <div class="desktop-nav">
+          <a href="/" class="nav-link">Home</a>
+          <a href="/services" class="nav-link">Services</a>
+          <a href="/agricultural-accounting" class="nav-link">Agriculture</a>
+          <a href="/outsource" class="nav-link">Outsource</a>
+          <a href="/pricing" class="nav-link">Pricing</a>
+          <a href="/contact" class="nav-link">Contact</a>
+        </div>
+      </nav>
+    </header>
+    <main style="min-height: 70vh; padding: 120px 24px 60px; max-width: 960px; margin: 0 auto;">
+      <h1 style="font-size: 2.5rem; font-weight: 600; margin-bottom: 16px;">${title}</h1>
+      <p style="font-size: 1.15rem; color: #6f828a; margin-bottom: 24px;">Compliant Bookkeeping SA — professional accounting, payroll, tax and compliance services.</p>
+      <a href="/contact" class="button button-dark" style="display:inline-block; padding: 12px 24px; background: #1E2528; color: #fff; border-radius: 8px; text-decoration: none;">Contact our team</a>
+    </main>
   </div>
-  ${jsTag}
+  <script src="/assets/site-client.js" defer></script>
 </body>
 </html>`;
 }
@@ -205,10 +219,10 @@ async function build() {
       const rawHtml = await fetchRouteHtml(routePath);
       let finalHtml = "";
       if (rawHtml) {
-        finalHtml = transformToProductionHtml(rawHtml, cssName, jsName);
+        finalHtml = transformToProductionHtml(rawHtml, cssName);
       } else {
         const title = routePath === "/" ? "Home" : routePath.replace(/^\//, "").replace(/-/g, " ");
-        finalHtml = createFallbackHtml(title, cssName, jsName);
+        finalHtml = createFallbackHtml(title, cssName);
       }
 
       writeFileSync(targetFile, finalHtml, "utf8");
@@ -227,7 +241,15 @@ async function build() {
     }
   }
 
-  // 8. Verify PHP contact endpoints and mail configuration are present
+  // 8. Ensure client runtime and PHP endpoints are present
+  const outAssets = join(OUT_DIR, "assets");
+  mkdirSync(outAssets, { recursive: true });
+  const siteClientSrc = join(ROOT, "public/assets/site-client.js");
+  if (existsSync(siteClientSrc)) {
+    cpSync(siteClientSrc, join(outAssets, "site-client.js"));
+    console.log("  ✓ Bundled production client runtime: assets/site-client.js");
+  }
+
   const apiDir = join(OUT_DIR, "api");
   mkdirSync(apiDir, { recursive: true });
   const phpContact = join(ROOT, "public/api/contact.php");
@@ -245,17 +267,16 @@ async function build() {
     cpSync(phpContact, join(OUT_DIR, "contact.php"));
   }
 
-  // 9. Generate ZIP bundle for 1-click Hostinger File Manager upload
-  console.log("Generating hostinger-public_html.zip...");
+  // 9. Generate standalone ZIP archive in workspace root for manual 1-click upload
+  console.log("Generating hostinger-public_html.zip in project root...");
   const zipName = "hostinger-public_html.zip";
   const zipDest = join(ROOT, zipName);
   try {
     execSync(
-      `python3 -c "import zipfile, os; z = zipfile.ZipFile('${zipDest}', 'w', zipfile.ZIP_DEFLATED); [z.write(os.path.join(r, f), os.path.relpath(os.path.join(r, f), '${OUT_DIR}')) for r, d, fs in os.walk('${OUT_DIR}') for f in fs if not f.endswith('.DS_Store')]; z.close()"`,
+      `python3 -c "import zipfile, os; z = zipfile.ZipFile('${zipDest}', 'w', zipfile.ZIP_DEFLATED); [z.write(os.path.join(r, f), os.path.relpath(os.path.join(r, f), '${OUT_DIR}')) for r, d, fs in os.walk('${OUT_DIR}') for f in fs if not f.endswith('.DS_Store') and not f.endswith('.zip')]; z.close()"`,
       { stdio: "inherit" }
     );
-    cpSync(zipDest, join(OUT_DIR, zipName));
-    console.log(`  ✓ Created ${zipName} (${zipDest})`);
+    console.log(`  ✓ Created standalone ${zipName} (${zipDest})`);
   } catch (err) {
     console.warn("  (Zip creation warning:", err.message, ")");
   }
@@ -264,19 +285,36 @@ async function build() {
   const instructions = `# Hostinger Shared Hosting Deployment Guide
 Compliant Bookkeeping SA (https://compliantbksa.co.za)
 
-## How to Deploy via GitHub Actions:
-The repository includes \`.github/workflows/deploy.yml\`.
-Whenever you push to the \`main\` branch, GitHub Actions will:
-1. Check out the code
-2. Run \`npm ci\`
-3. Run \`npm run build:hostinger\`
-4. FTP upload the \`dist-hostinger/\` folder directly into Hostinger's \`public_html/\`.
+## Why was Hostinger creating a duplicate 'public_html' folder?
+On Hostinger, when an FTP account is created for a website (e.g. \`compliantbksa.co.za\`), Hostinger's default FTP directory setting for that account is \`/public_html\`.
+When an FTP client connects with those credentials, its starting root directory is ALREADY \`public_html\`.
 
-Make sure your GitHub Repository Secrets are set:
-- \`HOSTINGER_HOST\`: Your Hostinger FTP hostname (e.g. \`ftp.compliantbksa.co.za\` or the Hostinger server IP)
-- \`HOSTINGER_USERNAME\`: Your Hostinger FTP username
-- \`HOSTINGER_PASSWORD\`: Your Hostinger FTP password
-- \`HOSTINGER_SERVER_DIR\` (optional): Defaults to \`./public_html/\` or \`./\` depending on your FTP user root directory
+If the deployment specifies \`server-dir: ./public_html/\`, FTP creates a folder named \`public_html\` INSIDE \`public_html\`, resulting in \`public_html/public_html/\`.
+Because your live website is served by LiteSpeed/Apache from the top-level \`public_html/\`, it remained without updated files, causing a blank page or 403 Forbidden!
+
+## How this is now fixed:
+1. **GitHub Actions Workflow (\`.github/workflows/deploy.yml\`)**:
+   \`server-dir\` is configured to default to \`./\`:
+   \`\`\`yaml
+   server-dir: \${{ secrets.HOSTINGER_SERVER_DIR || './' }}
+   \`\`\`
+   All files from \`dist-hostinger/\` now upload directly into your website's document root (\`public_html/\`).
+2. **Instant, Blank-Screen-Proof Static HTML**:
+   All 9 routes are pre-rendered into full semantic HTML with Tailwind styling and powered by \`assets/site-client.js\`.
+   This eliminates hydration crashes and ensures the site renders immediately on any device with full SEO.
+3. **Interactive Features**:
+   - Mobile navigation hamburger menu (fully responsive)
+   - FAQ accordion toggle
+   - Contact consultation form with PHP delivery to \`info@compliantbksa.co.za\` and \`accounting@compliantbksa.co.za\`
+   - Smooth anchor scrolling and WhatsApp floating dock
+
+## Cleanup Step in Hostinger File Manager:
+If you still see a folder named \`public_html\` INSIDE your main \`public_html\` directory on Hostinger:
+1. Log into your Hostinger control panel (hPanel).
+2. Go to **Websites** -> **Manage** -> **File Manager**.
+3. Open \`public_html\`.
+4. If there is a nested folder named \`public_html\` inside it, right-click and delete that nested folder.
+5. Push your code to GitHub (or trigger workflow dispatch in GitHub Actions) to run the clean deployment.
 `;
   writeFileSync(join(OUT_DIR, "HOSTINGER_DEPLOY_README.md"), instructions, "utf8");
   writeFileSync(join(ROOT, "HOSTINGER_DEPLOY_README.md"), instructions, "utf8");
