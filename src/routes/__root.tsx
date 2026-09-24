@@ -5,6 +5,8 @@ import { SiteShell } from "@/components/layout";
 import appCss from "../styles.css?url";
 
 const APP_NAME = "Compliant Bookkeeping SA";
+const APP_DESC =
+  "Compliant Bookkeeping SA — professional accounting, payroll, tax and compliance services for South African businesses and agricultural enterprises.";
 
 export const Route = createRootRoute({
   head: () => ({
@@ -14,9 +16,10 @@ export const Route = createRootRoute({
       { title: APP_NAME },
       {
         name: "description",
-        content:
-          "Compliant Bookkeeping SA — professional accounting, payroll and compliance for South African businesses. Cape Town and Ceres.",
+        content: APP_DESC,
       },
+      { property: "og:title", content: APP_NAME },
+      { property: "og:description", content: APP_DESC },
       { name: "theme-color", content: "#1E2528" },
     ],
     links: [

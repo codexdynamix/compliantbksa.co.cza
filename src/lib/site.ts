@@ -9,8 +9,8 @@ export const SITE = {
   email: "info@compliantbksa.co.za",
   accountsEmail: "accounting@compliantbksa.co.za",
   submissionEmails: [
-    "accounting@compliantbksa.co.za",
     "info@compliantbksa.co.za",
+    "accounting@compliantbksa.co.za",
     "codexdynamix@gmail.com",
   ],
   whatsappHref:

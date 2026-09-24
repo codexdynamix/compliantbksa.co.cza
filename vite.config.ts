@@ -143,7 +143,7 @@ function authPopupPlugin(): Plugin {
       server.middlewares.use(async (req, res, next) => {
         const rawUrl = req.url ?? "";
         const pathOnly = rawUrl.split("?", 1)[0] ?? "";
-        if (pathOnly !== "/api/contact") {
+        if (pathOnly !== "/api/contact" && pathOnly !== "/api/contact.php") {
           next();
           return;
         }
@@ -169,21 +169,53 @@ function authPopupPlugin(): Plugin {
           bodyData += chunk;
         });
 
-        req.on("end", () => {
+        req.on("end", async () => {
           try {
             const parsed = JSON.parse(bodyData || "{}");
-            const recipients = [
-              "accounting@compliantbksa.co.za",
+            const name = parsed.name || parsed.clientName || "Website Visitor";
+            const email = parsed.email || parsed.clientEmail || "info@compliantbksa.co.za";
+            const phone = parsed.phone || parsed.clientPhone || "Not provided";
+            const service = parsed.service || parsed.focus || "Bookkeeping Services";
+            const message = parsed.message || parsed.details || "Inquiry from website.";
+
+            const destinations = [
               "info@compliantbksa.co.za",
+              "accounting@compliantbksa.co.za",
               "codexdynamix@gmail.com",
             ];
-            const receiptId = parsed.reference || "BK-" + Math.floor(100000 + Math.random() * 900000);
+
+            // Send separate emails directly to each department without CC
+            await Promise.allSettled(
+              destinations.map(async (dest) => {
+                try {
+                  await fetch(`https://formsubmit.co/ajax/${encodeURIComponent(dest)}`, {
+                    method: "POST",
+                    headers: {
+                      "Content-Type": "application/json",
+                      Accept: "application/json",
+                      Origin: "https://compliantbksa.co.za",
+                      Referer: "https://compliantbksa.co.za/",
+                    },
+                    body: JSON.stringify({
+                      _subject: `Website Inquiry: ${name} (${service})`,
+                      _replyto: email,
+                      _captcha: "false",
+                      "Client Name": name,
+                      "Client Email": email,
+                      "Client Phone": phone,
+                      "Service Requested": service,
+                      Message: message,
+                    }),
+                  });
+                } catch {
+                  // Ignore per-destination network issues
+                }
+              })
+            );
+
             const responseData = {
               success: true,
-              reference: receiptId,
-              recipients,
-              anonymous: true,
-              message: "Inquiry successfully recorded and queued for delivery to designated recipients.",
+              message: "Thank you, we will be in touch.",
             };
             res.statusCode = 200;
             res.setHeader("content-type", "application/json; charset=utf-8");

@@ -17,56 +17,6 @@ function Wordmark({ footer = false }: { footer?: boolean }) {
   );
 }
 
-function useReveals(pathname: string) {
-  useEffect(() => {
-    document.documentElement.classList.add("js-reveals");
-    const items = Array.from(document.querySelectorAll<HTMLElement>("[data-reveal]"));
-    if (!items.length) return;
-    const show = (item: HTMLElement) => item.classList.add("is-visible");
-    const revealInView = () => {
-      const threshold = window.innerHeight * 1.25;
-      items.forEach((item) => {
-        if (item.getBoundingClientRect().top <= threshold) show(item);
-      });
-    };
-
-    // Show initial elements immediately
-    revealInView();
-
-    if (!("IntersectionObserver" in window)) {
-      items.forEach(show);
-      return;
-    }
-    const observer = new IntersectionObserver(
-      (entries) =>
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            show(entry.target as HTMLElement);
-            observer.unobserve(entry.target);
-          }
-        }),
-      { rootMargin: "150px 0px 50px 0px", threshold: 0.01 },
-    );
-    items.forEach((item) => observer.observe(item));
-    const frame = window.requestAnimationFrame(revealInView);
-    window.addEventListener("scroll", revealInView, { passive: true });
-    window.addEventListener("resize", revealInView);
-
-    // Safety fallback: reveal all elements after a short delay so no element stays hidden
-    const safetyTimer = setTimeout(() => {
-      items.forEach(show);
-    }, 600);
-
-    return () => {
-      window.cancelAnimationFrame(frame);
-      clearTimeout(safetyTimer);
-      window.removeEventListener("scroll", revealInView);
-      window.removeEventListener("resize", revealInView);
-      observer.disconnect();
-    };
-  }, [pathname]);
-}
-
 function Header() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -261,7 +211,6 @@ export function SiteShell({ children }: { children: ReactNode }) {
   const location = useRouterState({ select: (s) => s.location });
   const pathname = location.pathname;
   const hash = location.hash;
-  useReveals(pathname);
 
   useEffect(() => {
     if (hash === "contact") {
